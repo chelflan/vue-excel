@@ -39,7 +39,13 @@
           合并测试2
           </div> -->
     </span>
-
+    <span class="select-span">
+        <select class="select-content">
+          <option>2</option>
+          <option>3</option>
+          <option>4</option>
+        </select>
+    </span>
 	</div>
 </div>
 <!-- sheets -->
@@ -101,9 +107,8 @@ export default {
               end:"D16"
               }
             ],
-            selections:{
-             location:"C12",
-             selectVal:[
+            selections:[{
+             C12:[
               {
                 value: 's111',
                 label: 's111'
@@ -114,7 +119,7 @@ export default {
                 value: 's333',
                 label: 's333'
                 }]
-            },
+            }],
             rowCount: 200,
             columnCount: 26,
             data: {
@@ -221,7 +226,7 @@ export default {
       }
     },
     clkCombine(offLeft,offTop,width,height,pos,value){
-      this.positionOfInput(offLeft, offTop, height, width);
+      this.positionOfInput(offLeft, offTop, height, width, 1);
     },
     //计算长和宽
     calculateWH(pos){//start:E1  end:F6
@@ -249,7 +254,8 @@ export default {
     },
     //点击当前表格
     changeSheet(name) {
-      this.positionOfInput(0, 0, 0,0);
+      this.positionOfInput(0, 0, 0, 0, 1);
+      this.positionOfInput(0, 0, 0, 0, 2);
       this.currentDataSheet = this.tableData.sheets[name];
       // vm.positionOfInput(offsetLeft,offsetTop,height);
     },
@@ -276,8 +282,16 @@ export default {
         document.getElementsByClassName("table-td-title-2")[0].focus();
       }
     },
-    positionOfInput(offsetLeft, offsetTop, height,width) {
-      let selectWrap = document.getElementsByClassName("select-wrap")[0];
+    positionOfInput(offsetLeft, offsetTop, height,width, type) {
+      let selectWrap;
+      switch(type){
+        case 1://input
+        selectWrap = document.getElementsByClassName("select-wrap")[0];
+        break;
+        case 2://select
+        selectWrap = document.getElementsByClassName("select-span")[0];
+        break;
+      }      
       selectWrap.style.left = offsetLeft + "px";
       selectWrap.style.top = offsetTop + "px";
       selectWrap.style.height = height + "px";
@@ -285,26 +299,53 @@ export default {
       selectWrap.style.width = "auto";
 
     },
-    clk(e) {
+    clk(e) {  
       let vm = this;
+      vm.positionOfInput(0, 0, 0, 0, 1);
+      vm.positionOfInput(0, 0, 0, 0, 2);  
+      
       let height = e.target.offsetHeight,
         width = e.target.offsetWidth,
         offsetLeft = e.target.offsetLeft,
         offsetTop = e.target.offsetTop;
-      vm.positionOfInput(offsetLeft, offsetTop, height, width);
-      document.getElementsByClassName("table-input-content")[0].onkeyup = function(e) {
-        vm.showVal = e.target.innerText;
-        let data = vm.currentDataSheet.data;
-        if(!!!data[vm.showPos].formula){
-          data[vm.showPos].value = e.target.innerText;
-        }else{
-          data[vm.showPos].formula = e.target.innerText;
+
+      let sourceData = vm.currentDataSheet.selections;
+      let isSelection = false;      
+      for(let i = 0; i < sourceData.length; i++){
+        if(!!sourceData[i][vm.showPos]){
+          isSelection = true;          
+          break;
         }
-      };
-      document.getElementsByClassName("table-input-content")[0].focus();
-      document.getElementsByClassName( "table-input-content")[0].onblur = function(e) {
+      }      
+      
+      if(isSelection){                        
+        vm.positionOfInput(offsetLeft, offsetTop, height, width, 2);
+        document.getElementsByClassName("select-content")[0].onchange = function(e) {
+          console.log("eee");                    
+          vm.showVal = e.target.value;
+          vm.currentDataSheet.data[vm.showPos].value = e.target.value;
+          vm.positionOfInput(0, 0, 0, 0, 2);
+        };
+        document.getElementsByClassName("select-content")[0].focus();
+        document.getElementsByClassName("select-content")[0].onblur = function(e) {
         this.showVal = "";
-      };
+        };
+      } else {
+        vm.positionOfInput(offsetLeft, offsetTop, height, width, 1);
+        document.getElementsByClassName("table-input-content")[0].onkeyup = function(e) {
+          vm.showVal = e.target.innerText;
+          let data = vm.currentDataSheet.data;
+          if(!!!data[vm.showPos].formula){                    
+            data[vm.showPos].value = e.target.innerText;
+          }else{
+            data[vm.showPos].formula = e.target.innerText;
+          }
+        };
+        document.getElementsByClassName("table-input-content")[0].focus();
+        document.getElementsByClassName( "table-input-content")[0].onblur = function(e) {
+          this.showVal = "";
+        };
+      }      
     },
     calculateManySheets(val) {
       let len = val.length,
@@ -473,5 +514,18 @@ export default {
   vertical-align: middle;
   overflow: hidden;
   cursor: default;
+}
+.select-span {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 9;
+  background: #f5f5dc00;
+}
+.select-content{
+  width:100%;
+  border:1px solid #000;
+  background:#DBF2F5;
 }
 </style>
