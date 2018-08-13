@@ -9,7 +9,7 @@
       </div>
     </div>
    <div class="table-content" id="table-content"  style="position:relative;" >
-     
+
      <!-- 表头 -->
     <div   style="position:relative;z-index:5;" class="table-thead">
 		<div class="table-tr">
@@ -23,22 +23,19 @@
 			<div class="table-td table-cell" v-for="td in getAlphabetArr()" :key="td" contenteditable="true" @click="clk" @focus="focusCell(tr,td)" @keyup="divKeyUp">
             {{isOk(tr,td)}}
       </div>
+
+      <!-- 中间层合并、下拉框 -->
+      <div class="middle-area" @click = 'clkCombine' style="position:absolute;z-index:7;left:0;top:0;background:rgba(77,184,254,.5)">
+      </div>
     </div>
     <!-- 顶层的input输入框 -->
      <span class = "select-wrap">
-        <div class="table-input-content" tabindex="0" contenteditable="true" dir="ltr" aria-autocomplete="list" aria-label="F12" style="max-height: 374px; min-height: 19px;border:1px solid #000;background:#DBF2F5">
+        <div class="table-input-content" tabindex="0" contenteditable="true" dir="ltr" aria-autocomplete="list" aria-label="F12" style="border:1px solid #000;background:#DBF2F5">
           {{showVal}}
           </div>
       </span>
-    <!-- 中间层合并、下拉框 -->
-    <span class="middle-area" style="position:absolute;z-index=7;left:0;top:0;background:rgba(77,184,254,.5)">
-          <!-- <div class="table-middle-content" tabindex="0" contenteditable="true" dir="ltr" aria-autocomplete="list" aria-label="F12" style="position:absolute;max-height: 374px; min-height: 19px;background:#DBF2F5;width:160px;height:22px;top:88px;left:240px;text-align:center;vertical-align:middle;">
-          合并测试
-          </div>
-           <div  tabindex="0" contenteditable="true" dir="ltr" aria-autocomplete="list" aria-label="F12" style="position:absolute;max-height: 374px; min-height: 19px;background:#DBF2F5;width:400px;height:66px;top:44px;left:480px;text-align:center;vertical-align:middle;">
-          合并测试2
-          </div> -->
-    </span>
+
+     <!--下拉框-->
     <span class="select-span">
         <select class="select-content">
           <option>2</option>
@@ -186,24 +183,23 @@ export default {
     let sheetsAll = this.tableData.sheets;
     let sheetsNames = this.tableData.sheets.sheetNames;
     this.currentDataSheet = sheetsAll[sheetsNames[0]];
-    
+
   },
   mounted() {
     this.showCombine();
    },
   watch: {},
   methods: {
-    // <div class="table-middle-content" tabindex="0"
-    //  contenteditable="true"" style="position:absolute;width:160px;height:22px;top:88px;
-    // left:240px;text-align:center;vertical-align:middle;">
-          
-    //       </div>
     //将合并的格子遍历
     showCombine(){
       let parentNode = document.getElementsByClassName("middle-area")[0];
       let combineData = this.currentDataSheet.merges;
+      var len = combineData.length;
+      if(len > 0){
+        parentNode.style.display = "block";
+      }
       for(let i = 0,len = combineData.length;i < len;i++){
-          
+
           let offLeft = this.calculateLocation(combineData[i])[0]+"px";
           let offTop =  this.calculateLocation(combineData[i])[1]+"px";
           let width = this.calculateWH(combineData[i])[0]+"px";
@@ -221,12 +217,26 @@ export default {
           divNode.innerText = value;
           divNode.style.textAlign = "center";
           divNode.style.verticalAlign = "middle";
-          divNode.onclick = this.clkCombine(offLeft,offTop,width,height,combineData[i].start,value);
+          divNode.style.background = "red";
+          // divNode.onclick = this.clkCombine(offLeft,offTop,width,height,combineData[i].start,value);
           parentNode.appendChild(divNode);
       }
     },
-    clkCombine(offLeft,offTop,width,height,pos,value){
-      this.positionOfInput(offLeft, offTop, height, width, 1);
+    //点击合并格子显示
+    clkCombine(event){
+      console.log(event);
+      this.showPos = this.distanceToPos(event.target.offsetLeft,event.target.offsetTop);
+        this.showVal = event.target.innerText;
+        var inputCode = document.getElementsByClassName("table-input-content")[0];
+      inputCode.style.height = event.target.offsetHeight+"px";
+      // inputCode.style.width = event.target.offsetWidth+"px";
+       this.positionOfInput(event.target.offsetLeft, event.target.offsetTop, event.target.offsetHeight, event.target.offsetWidth, 1);
+    },
+    //将左边和顶部的距离换算成pos
+    distanceToPos(left,top){
+      var leftPos = left / this.currentDataSheet.colWidth;
+      var topPos = top / this.currentDataSheet.rowHeight;
+      return String.fromCharCode(leftPos+64)+topPos;
     },
     //计算长和宽
     calculateWH(pos){//start:E1  end:F6
@@ -256,8 +266,9 @@ export default {
     changeSheet(name) {
       this.positionOfInput(0, 0, 0, 0, 1);
       this.positionOfInput(0, 0, 0, 0, 2);
+      document.getElementsByClassName("middle-area")[0].style.display = "none";
       this.currentDataSheet = this.tableData.sheets[name];
-      // vm.positionOfInput(offsetLeft,offsetTop,height);
+      this.showCombine();
     },
     //实时改变值
     keyupFun(e) {
@@ -291,7 +302,7 @@ export default {
         case 2://select
         selectWrap = document.getElementsByClassName("select-span")[0];
         break;
-      }      
+      }
       selectWrap.style.left = offsetLeft + "px";
       selectWrap.style.top = offsetTop + "px";
       selectWrap.style.height = height + "px";
@@ -299,29 +310,28 @@ export default {
       selectWrap.style.width = "auto";
 
     },
-    clk(e) {  
+    clk(e) {
       let vm = this;
       vm.positionOfInput(0, 0, 0, 0, 1);
-      vm.positionOfInput(0, 0, 0, 0, 2);  
-      
+      vm.positionOfInput(0, 0, 0, 0, 2);
+
       let height = e.target.offsetHeight,
         width = e.target.offsetWidth,
         offsetLeft = e.target.offsetLeft,
         offsetTop = e.target.offsetTop;
 
       let sourceData = vm.currentDataSheet.selections;
-      let isSelection = false;      
+      let isSelection = false;
       for(let i = 0; i < sourceData.length; i++){
         if(!!sourceData[i][vm.showPos]){
-          isSelection = true;          
+          isSelection = true;
           break;
         }
-      }      
-      
-      if(isSelection){                        
+      }
+
+      if(isSelection){
         vm.positionOfInput(offsetLeft, offsetTop, height, width, 2);
         document.getElementsByClassName("select-content")[0].onchange = function(e) {
-          console.log("eee");                    
           vm.showVal = e.target.value;
           vm.currentDataSheet.data[vm.showPos].value = e.target.value;
           vm.positionOfInput(0, 0, 0, 0, 2);
@@ -335,7 +345,7 @@ export default {
         document.getElementsByClassName("table-input-content")[0].onkeyup = function(e) {
           vm.showVal = e.target.innerText;
           let data = vm.currentDataSheet.data;
-          if(!!!data[vm.showPos].formula){                    
+          if(!!!data[vm.showPos].formula){
             data[vm.showPos].value = e.target.innerText;
           }else{
             data[vm.showPos].formula = e.target.innerText;
@@ -345,7 +355,7 @@ export default {
         document.getElementsByClassName( "table-input-content")[0].onblur = function(e) {
           this.showVal = "";
         };
-      }      
+      }
     },
     calculateManySheets(val) {
       let len = val.length,
@@ -430,7 +440,9 @@ export default {
   height: 100%;
   overflow: hidden;
   z-index: 9;
-  background: #f5f5dc00;
+  background: yellow;
+  display: inline-block;
+
 }
 .container {
   height: 500px;
